@@ -8,5 +8,6 @@ from django.shortcuts import render
 
 
 def add_task(request):
-    test_task.delay()
-    return HttpResponse('Task Added')
+    result = test_task.delay()
+    print result
+    return HttpResponse('Task Added' + str(result))

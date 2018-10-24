@@ -77,15 +77,23 @@ WSGI_APPLICATION = 'docker_test.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'docker_test',
-        'USER': 'postgres',
-        'PASSWORD': 'postgres',
-        'HOST': os.environ.get('DATABASE'),
-        'PORT': 5432,
+if not os.environ.get('DATABASE'):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        }
     }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': os.environ.get('POSTGRES_NAME', 'docker_test'),
+            'USER': os.environ.get('POSTGRES_USER', 'postgres'),
+            'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'postgres'),
+            'HOST': os.environ.get('DATABASE', 'localhost'),
+            'PORT': 5432,
+        }
 }
 
 
@@ -125,10 +133,14 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATIC_URL = '/static/'
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, 'static'),
+)
 
-CELERY_BROKER_URL = 'redis://redis:6379/0'
-CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+CELERY_BROKER_URL = 'redis://%s:6379/0' % os.environ.get('REDIS', 'localhost')
+CELERY_RESULT_BACKEND = 'redis://%s:6379/0' % os.environ.get('REDIS', 'localhost')
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
@@ -137,6 +149,6 @@ CELERY_TIMEZONE = TIME_ZONE
 
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_HOST_USER = 'info.ballogy@gmail.com'
-EMAIL_HOST_PASSWORD = 'ballogy17'
+EMAIL_HOST_PASSWORD = 'ballogy2k18'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True

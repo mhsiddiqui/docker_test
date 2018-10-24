@@ -1,0 +1,121 @@
+{
+    "AWSEBDockerrunVersion": 2,
+    "containerDefinitions": [
+        {
+            "command": [
+                "celery",
+                "beat",
+                "--loglevel=info"
+            ],
+            "essential": true,
+            "image": "ballogy/docker_test:v1.0",
+            "links": [
+                "db",
+                "redis"
+            ],
+            "memory": 20,
+            "name": "cbeat"
+        },
+        {
+            "command": [
+                "celery",
+                "-A",
+                "docker_test",
+                "worker",
+                "-l",
+                "info"
+            ],
+            "essential": true,
+            "image": "ballogy/docker_test:v1.0",
+            "links": [
+                "db",
+                "redis"
+            ],
+            "memory": 20,
+            "name": "celery"
+        },
+        {
+            "environment": [
+                {
+                    "name": "POSTGRES_NAME",
+                    "value": "postgres"
+                },
+                {
+                    "name": "POSTGRES_USER",
+                    "value": "postgres"
+                },
+                {
+                    "name": "POSTGRES_PASSWORD",
+                    "value": "postgres"
+                },
+                {
+                    "name": "POSTGRES_DB",
+                    "value": "docker_test"
+                }
+            ],
+            "essential": true,
+            "image": "postgres:9.6",
+            "memory": 30,
+            "name": "db"
+        },
+        {
+            "essential": true,
+            "image": "redis:3.0",
+            "memory": 30,
+            "name": "redis"
+        },
+        {
+            "command": [
+                "gunicorn",
+                "docker_test.wsgi:application",
+                "-w",
+                "2",
+                "-b",
+                ":8000",
+                "--timeout",
+                "120",
+                "--graceful-timeout",
+                "120",
+                "--worker-class",
+                "gevent"
+            ],
+            "entryPoint": [
+                "./entry_point.sh"
+            ],
+            "environment": [
+                {
+                    "name": "DATABASE",
+                    "value": "db"
+                },
+                {
+                    "name": "POSTGRES_NAME",
+                    "value": "postgres"
+                },
+                {
+                    "name": "POSTGRES_USER",
+                    "value": "postgres"
+                },
+                {
+                    "name": "POSTGRES_PASSWORD",
+                    "value": "postgres"
+                },
+                {
+                    "name": "POSTGRES_DB",
+                    "value": "docker_test"
+                }
+            ],
+            "essential": true,
+            "image": "ballogy/docker_test:v1.0",
+            "memory": 300,
+            "name": "web",
+            "portMappings": [
+                {
+                    "containerPort": 8000,
+                    "hostPort": 8000
+                }
+            ]
+        }
+    ],
+    "family": "",
+    "volumes": []
+}

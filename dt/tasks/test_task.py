@@ -9,6 +9,7 @@ logger = get_task_logger(__name__)
 
 @app.task
 def test_task():
+    print 'test'
     html_content = '<html><body>%s</body></html>'
     tbl = '<table>'
     for i in range(1, 1000):

@@ -1,53 +1,92 @@
-version: "3"
+version: "2"
 services:
   db:
     restart: always
+    container_name: docker_test-db
     image: postgres:9.6
+    expose:
+      - "5432"
+    mem_limit: 30m
     environment:
+      - POSTGRES_NAME=postgres
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=docker_test
-    expose:
-      - "5432"
+
   redis:
     restart: always
     image: redis:3.0
     expose:
       - "6379"
+    mem_limit: 30m
+
   web:
     # replace username/repo:tag with your name and image details
-    image: docker_test
+    restart: always
+    image: ballogy/docker_test:latest
+    container_name: docker_test-container
     ports:
-      - "80:8000"
+      - "8000:8000"
+    expose:
+      - "8000"
     environment:
       - DATABASE=db
+      - REDIS=redis
+      - POSTGRES_NAME=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=docker_test
+    mem_limit: 300m
     depends_on:
       - db
       - redis
-    entrypoint: ./entry_point.sh
-    command: uwsgi uwsgi.ini
+    command: sh -c "./entry_point.sh && gunicorn docker_test.wsgi:application -w 2 -b :8000 --timeout 120 --graceful-timeout 120 --worker-class gevent"
 
   celery:
-    image: docker_test
-    container_name: cl01
-    command: celery -A docker_test worker -l info
+    image: ballogy/docker_test:latest
+    container_name: docker_test-celery
+    command: celery -A docker_test worker --loglevel=info
+    environment:
+      - DATABASE=db
+      - REDIS=redis
+      - POSTGRES_NAME=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=docker_test
     links:
+      - db
+      - redis
+    mem_limit: 20m
+    depends_on:
+      - web
+      - db
+      - redis
+
+  cbeat:
+    image: ballogy/docker_test:latest
+    container_name: docker_test-cbeat
+    command: celery -A docker_test beat --loglevel=info
+    links:
+      - db
+      - redis
+    mem_limit: 20m
+    environment:
+      - DATABASE=db
+      - REDIS=redis
+      - POSTGRES_NAME=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=docker_test
+    depends_on:
+      - web
       - db
       - redis
 
   flower:
-    image: docker_test
+    image: ballogy/docker_test:latest
     container_name: cl02
     command: celery flower -A docker_test --port=5000
-    links:
-      - celery
-
-  nginx:
-    restart: always
-    build: ./nginx/
-    ports:
-      - "8000:80"
+    expose:
+      - "5000"
     depends_on:
-      - web
-    links:
-      - web:web
+      - celery

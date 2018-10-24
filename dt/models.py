@@ -8,3 +8,4 @@ from django.db import models
 
 class Visitor(models.Model):
     time = models.DateTimeField(auto_now_add=True)
+    test = models.BooleanField(default=True)
